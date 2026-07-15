@@ -1,65 +1,63 @@
 using UnityEngine;
 using TMPro;
-using System.Collections;
 
 public class ExitTrigger : MonoBehaviour
 {
-    [Header("UI Teks Misi")]
-    public GameObject welcomeTextUI; // Menghubungkan ke Teks_Misi_Awal di layar
+    [Header("UI Teks Counter")]
+    public TextMeshProUGUI textCounterMisi; // Kolom untuk Teks_Counter_Misi
 
-    private TextMeshProUGUI teksMisi;
-    private Coroutine hilangkanTeksCoroutine;
+    [Header("Objek Pintu Keluar")]
+    public GameObject objekPintuKeluar;     // Kolom untuk Pintu_keluar
+
+    private MissionManager mManager;
 
     private void Start()
     {
-        if (welcomeTextUI != null)
-        {
-            teksMisi = welcomeTextUI.GetComponent<TextMeshProUGUI>();
-        }
+        mManager = FindObjectOfType<MissionManager>();
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        // Mengecek apakah yang menabrak pintu keluar adalah Player
         if (other.CompareTag("Player"))
         {
-            if (MissionManager.instance != null)
+            // Kita cek lewat method bawaan MissionManager (jika ada) atau ganti kondisi ini
+            // Agar aman dari error, kita gunakan fungsi cek status selesai yang universal:
+            if (mManager != null && textCounterMisi != null && textCounterMisi.text.Contains("6 / 6"))
             {
-                // Mengecek ke MissionManager apakah semua lukisan sudah diperiksa
-                bool apakahSudahSelesai = MissionManager.instance.IsMisiSelesai();
-
-                if (apakahSudahSelesai)
+                // BERHASIL: Buka pintu keluar jika teks UI sudah menunjukkan 6 / 6
+                if (objekPintuKeluar != null)
                 {
-                    TampilkanTeks("MISI SELESAI!\nTerima kasih telah berkunjung ke museum.", false);
-                    Debug.Log("Player berhasil keluar! Game Tamat.");
+                    objekPintuKeluar.SetActive(false);
                 }
-                else
+
+                textCounterMisi.text = "SELAMAT! Misi Selesai.\nSilakan Keluar Museum.";
+                textCounterMisi.color = Color.green;
+            }
+            else
+            {
+                // GAGAL: Pintu masih terkunci
+                if (textCounterMisi != null)
                 {
-                    TampilkanTeks("<color=red>Selesaikan misi tour terlebih dahulu sebelum keluar!</color>", true);
+                    // Menyimpan teks asli sementara agar angka counter tidak hilang permanen
+                    string teksSekarang = textCounterMisi.text;
+                    
+                    textCounterMisi.text = "PINTU TERKUNCI!\nSelesaikan Misi (6 Karya Seni) Dulu.";
+                    textCounterMisi.color = Color.red;
+                    
+                    // Mengembalikan teks counter setelah 3 detik agar player tahu kurang berapa lagi
+                    StartCoroutine(KembalikanTeksCounter(teksSekarang, 3f));
                 }
             }
         }
     }
 
-    void TampilkanTeks(string pesan, bool autoHide)
-    {
-        if (teksMisi != null && welcomeTextUI != null)
-        {
-            if (hilangkanTeksCoroutine != null) StopCoroutine(hilangkanTeksCoroutine);
-
-            teksMisi.text = pesan;
-            welcomeTextUI.SetActive(true);
-
-            if (autoHide)
-            {
-                hilangkanTeksCoroutine = StartCoroutine(HideTextAfterDelay(3f));
-            }
-        }
-    }
-
-    IEnumerator HideTextAfterDelay(float delay)
+    System.Collections.IEnumerator KembalikanTeksCounter(string teksAsli, float delay)
     {
         yield return new WaitForSeconds(delay);
-        if (welcomeTextUI != null) welcomeTextUI.SetActive(false);
+        if (textCounterMisi != null && !textCounterMisi.text.Contains("SELAMAT"))
+        {
+            textCounterMisi.text = teksAsli;
+            textCounterMisi.color = Color.yellow; // Kembalikan ke warna kuning semula
+        }
     }
 }
