@@ -5,7 +5,7 @@ public class DoorMissionController : MonoBehaviour
 {
     [Header("Referensi Misi & Pintu")]
     public MissionManager missionManager; 
-    public GameObject objekPintuFisik; // Masukkan objek daun pintunya di sini
+    public GameObject objekPintuFisik; 
 
     [Header("Pengaturan UI Peringatan")]
     public GameObject teksKawasanUI; 
@@ -14,32 +14,28 @@ public class DoorMissionController : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            // Cek apakah 6 pajangan sudah diperiksa
             if (missionManager != null && missionManager.IsMisiSelesai())
             {
                 Debug.Log("Misi selesai! Pintu terbuka.");
                 
-                // Menyembunyikan pintu fisik agar player bisa lewat keluar
                 if (objekPintuFisik != null)
                 {
                     objekPintuFisik.SetActive(false); 
                 }
                 
-                // Tampilkan pesan sukses di layar
                 if (teksKawasanUI != null)
                 {
                     teksKawasanUI.SetActive(true);
                     TextMeshProUGUI komponenTeks = teksKawasanUI.GetComponent<TextMeshProUGUI>();
                     if (komponenTeks != null)
                     {
-                        komponenTeks.color = Color.green; // Ubah teks jadi hijau tanda sukses
+                        komponenTeks.color = Color.green;
                         komponenTeks.text = "Museum Tour Complete! Pintu Terbuka.";
                     }
                 }
             }
             else
             {
-                // Jika BELUM selesai, munculkan teks merah terkunci
                 if (teksKawasanUI != null)
                 {
                     teksKawasanUI.SetActive(true);
@@ -58,9 +54,16 @@ public class DoorMissionController : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
+            // PENTING: Sembunyikan teks kawasan UI (merah/hijau) saat player menjauh dari pintu
             if (teksKawasanUI != null)
             {
                 teksKawasanUI.SetActive(false);
+            }
+
+            // Kembalikan ke counter kuning HANYA jika misi BELUM selesai
+            if (missionManager != null && !missionManager.IsMisiSelesai())
+            {
+                missionManager.UpdateCounterUI();
             }
         }
     }

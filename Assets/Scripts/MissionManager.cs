@@ -1,62 +1,134 @@
 using UnityEngine;
 using TMPro;
-using System.Collections.Generic;
 
 public class MissionManager : MonoBehaviour
 {
     public static MissionManager instance;
 
-    [Header("UI Teks Counter")]
-    public TextMeshProUGUI textCounterMisi;
+    [Header("UI Elements")]
+    public TextMeshProUGUI textCounterMisi; 
+    public GameObject endStatePanel;
 
-    private int jumlahObjekDiperiksa = 0;
-    private int totalTargetObjek = 6;
-    
-    // Untuk mencatat objek agar tidak dihitung berkali-kali jika didekati ulang
-    private HashSet<string> objekSudahDilihat = new HashSet<string>();
+    [Header("Mission Settings")]
+    public int totalArtefak = 6; 
+    private int artefakDinspeksi = 0;
 
-    private void Awake()
+    [Header("Audio Feedback")]
+    public AudioSource sfxSource;
+    public AudioClip sfxDing;
+
+    public void PlayCheckSFX()
     {
-        if (instance == null) instance = this;
-    }
-
-    private void Start()
-    {
-        UpdateTeksUI();
-    }
-
-    public void PeriksaObjek(string namaObjek)
-    {
-        if (!objekSudahDilihat.Contains(namaObjek))
+        if (sfxSource != null && sfxDing != null)
         {
-            objekSudahDilihat.Add(namaObjek);
-            jumlahObjekDiperiksa++;
-            UpdateTeksUI();
-
-            if (jumlahObjekDiperiksa >= totalTargetObjek)
-            {
-                MisiSelesai();
-            }
+            sfxSource.PlayOneShot(sfxDing);
         }
     }
 
-    void UpdateTeksUI()
+    void Awake()
+    {
+        instance = this;
+    }
+
+    void Start()
+    {
+        if (endStatePanel != null) endStatePanel.SetActive(false);
+        
+        // KUNCI: Matikan teks counter di awal game agar tidak kelihatan saat di luar gedung
+        if (textCounterMisi != null)
+        {
+            textCounterMisi.gameObject.SetActive(false); 
+        }
+        
+        UpdateCounterTextOnly(); 
+    }
+
+    // Dipanggil saat Player pertama kali memeriksa objek lukisan
+    public void PeriksaObjek()
+    {
+        artefakDinspeksi++;
+        
+        if (textCounterMisi != null)
+        {
+            textCounterMisi.gameObject.SetActive(true);
+        }
+        
+        if (sfxSource != null && sfxDing != null)
+        {
+            sfxSource.PlayOneShot(sfxDing);
+        }
+        
+        UpdateCounterUI();
+    }
+
+    // Menerima parameter dari PlayerInteraction agar tidak error
+    public void PeriksaObjek(object objek)
+    {
+        PeriksaObjek();
+    }
+
+    public void ArtefakBerhasilDiinspeksi()
+    {
+        PeriksaObjek();
+    }
+
+    public bool ApakahMisiSelesai()
+    {
+        return artefakDinspeksi >= totalArtefak;
+    }
+
+    public bool IsMisiSelesai()
+    {
+        return ApakahMisiSelesai();
+    }
+
+    // Memperbarui UI Teks Counter (Kuning)
+    public void UpdateCounterUI()
     {
         if (textCounterMisi != null)
         {
-            textCounterMisi.text = "Karya Seni Diperiksa: " + jumlahObjekDiperiksa + " / " + totalTargetObjek;
+            // Pastikan hanya aktif jika memang sudah ada lukisan yang diperiksa
+            if (artefakDinspeksi > 0)
+            {
+                textCounterMisi.gameObject.SetActive(true);
+            }
+            else
+            {
+                textCounterMisi.gameObject.SetActive(false);
+            }
+            
+            textCounterMisi.color = Color.yellow; 
+            textCounterMisi.text = "Karya Seni Diperiksa: " + artefakDinspeksi + " / " + totalArtefak;
         }
     }
 
-    void MisiSelesai()
+    // Hanya merubah isi tulisan di awal tanpa memaksanya muncul di layar
+    private void UpdateCounterTextOnly()
     {
-        Debug.Log("Selamat! Seluruh karya seni sudah diperiksa.");
-        // Tempat kamu bisa menambahkan aksi kalau misi selesai, misal muncul teks "MISI SELESAI"
+        if (textCounterMisi != null)
+        {
+            textCounterMisi.color = Color.yellow; 
+            textCounterMisi.text = "Karya Seni Diperiksa: " + artefakDinspeksi + " / " + totalArtefak;
+        }
     }
 
-    // --- TAMBAHAN FUNGSI UNTUK CEK STATUS MISI DARI EXIT TRIGGER ---
-    public bool IsMisiSelesai()
+    // Menimpa teks dengan Peringatan Pintu Merah saat mendekati pintu keluar
+    public void TampilkanPeringatanPintu(string pesan)
     {
-        return jumlahObjekDiperiksa >= totalTargetObjek;
+        if (textCounterMisi != null)
+        {
+            textCounterMisi.gameObject.SetActive(true); 
+            textCounterMisi.color = Color.red; 
+            textCounterMisi.text = pesan;
+        }
+    }
+
+    public void TriggerEndState()
+    {
+        if (endStatePanel != null)
+        {
+            endStatePanel.SetActive(true);
+            Time.timeScale = 0f; 
+        }
     }
 }
